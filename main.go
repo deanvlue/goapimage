@@ -1,50 +1,63 @@
 package main
 
 import (
-	"bytes"
-	"flag"
-	"image"
-	"image/color"
-	"image/draw"
-	"image/jpeg"
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 )
 
-var root = flag.String("root", ".", "file system path")
+// restarted
+
+type helloWorldResponse struct {
+	Message string `json:"message"`
+	Author  string `json:"-"`
+	// do not output the fuel if the value is empty
+	Date string `json:",omitempty"`
+	//convert output to a string and rename to id
+	Id int `json:"id, string"`
+}
+
+func init() {
+}
 
 func main() {
-	http.HandleFunc("/blue/", blueHandler)
-	//http.HandleFunc("/red/", redHandler)
-	http.Handle("/", http.FileServer(http.Dir(*root)))
-	log.Println("Listening on 8080")
-	err := http.ListenAndServe(":8080", nil)
+	// implementar llamada al api
+	port := 8080
+
+	http.HandleFunc("/holaMundo", helloWorldHandler)
+
+	log.Printf("Server starting on port %v\n", port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", port), nil))
+
+	// cargar imagen y fuentes de resources
+	// desplegar imagen en la llamada al api en base64
+	// tomar una variable del query que se manda al API
+	// separar esa cadena por espacios y poner los índices 0 y 1
+	// escribir la cadena resultante en la imagen
+	//
+
+}
+
+func helloWorldHandler(w http.ResponseWriter, r *http.Request) {
+	//fmt.Fprint(w, "Hola Mundo\n")
+	response := helloWorldResponse{Message: "Hello World"}
+	data, err := json.Marshal(response)
 	if err != nil {
-		log.Fatal("Listen and serve:", err)
-	}
-}
-
-func blueHandler(w http.ResponseWriter, r *http.Request) {
-	m := image.NewRGBA(image.Rect(0, 0, 240, 240))
-	blue := color.RGBA{0, 0, 255, 255}
-	draw.Draw(m, m.Bounds(), &image.Uniform{blue}, image.ZP, draw.Src)
-
-	var img image.Image = m
-	writeImage(w, &img)
-}
-
-func writeImage(w http.ResponseWriter, img *image.Image) {
-	buffer := new(bytes.Buffer)
-
-	if err := jpeg.Encode(buffer, *img, nil); err != nil {
-		log.Println("unable to encode the image")
+		panic("Oppppsspososos")
 	}
 
-	w.Header().Set("Content-Type", "image/jpg")
-	w.Header().Set("Content-Length", strconv.Itoa(len(buffer.Bytes())))
-	if _, err := w.Write(buffer.Bytes()); err != nil {
-		log.Println("unable to write image")
-	}
-
+	fmt.Fprint(w, string(data))
 }
+
+/*func fileExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return true, err
+}
+*/
