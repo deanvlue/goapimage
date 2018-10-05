@@ -1,63 +1,36 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 // restarted
 
-type helloWorldResponse struct {
-	Message string `json:"message"`
-	Author  string `json:"-"`
-	// do not output the fuel if the value is empty
-	Date string `json:",omitempty"`
-	//convert output to a string and rename to id
-	Id int `json:"id, string"`
-}
-
 func init() {
 }
 
+var router = mux.NewRouter()
+
 func main() {
-	// implementar llamada al api
-	port := 8080
-
-	http.HandleFunc("/holaMundo", helloWorldHandler)
-
-	log.Printf("Server starting on port %v\n", port)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", port), nil))
-
-	// cargar imagen y fuentes de resources
-	// desplegar imagen en la llamada al api en base64
-	// tomar una variable del query que se manda al API
-	// separar esa cadena por espacios y poner los índices 0 y 1
-	// escribir la cadena resultante en la imagen
-	//
-
+	router.Path("/api/namedgoldcard/").Queries("name", "{name}").HandlerFunc(NamedGoldCardHandler).Name("NamedGoldCardHandler")
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
 
-func helloWorldHandler(w http.ResponseWriter, r *http.Request) {
-	//fmt.Fprint(w, "Hola Mundo\n")
-	response := helloWorldResponse{Message: "Hello World"}
-	data, err := json.Marshal(response)
+// NamedGoldCardHandler handles the input request
+func NamedGoldCardHandler(w http.ResponseWriter, r *http.Request) {
+
+	name := r.FormValue("name")
+
+	_, err := router.Get("NamedGoldCardHandler").URL("name", name)
+
 	if err != nil {
-		panic("Oppppsspososos")
+		http.Error(w, err.Error(), 500)
+		return
 	}
 
-	fmt.Fprint(w, string(data))
+	fmt.Fprintln(w, "Hello,", name)
 }
-
-/*func fileExists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	}
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	return true, err
-}
-*/
