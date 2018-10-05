@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 )
@@ -16,21 +17,24 @@ func init() {
 var router = mux.NewRouter()
 
 func main() {
-	router.Path("/api/namedgoldcard/").Queries("name", "{name}").HandlerFunc(NamedGoldCardHandler).Name("NamedGoldCardHandler")
+	router.Path("/api/namedgoldcard/").Queries("name", "{name}", "code", "{code}").HandlerFunc(NamedGoldCardHandler).Name("NamedGoldCardHandler")
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
 
 // NamedGoldCardHandler handles the input request
 func NamedGoldCardHandler(w http.ResponseWriter, r *http.Request) {
 
-	name := r.FormValue("name")
+	authCode := os.Getenv("authCode")
+	name := r.URL.Query().Get("name")
+	code := r.URL.Query().Get("code")
 
-	_, err := router.Get("NamedGoldCardHandler").URL("name", name)
-
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-		return
+	if code == authCode {
+		log.Println("name:", name)
+		log.Println("code:", code)
+		fmt.Fprintln(w, "Name:", name)
+		fmt.Fprintln(w, "Code:", code)
+	} else {
+		http.Error(w, "Unauthorized", 401)
 	}
 
-	fmt.Fprintln(w, "Hello,", name)
 }
