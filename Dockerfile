@@ -1,5 +1,5 @@
 FROM scratch
 ENV authCode "1234"
-ADD app /
+ADD main /
 EXPOSE 8080
-CMD ["/app"]
+CMD ["/main"]
