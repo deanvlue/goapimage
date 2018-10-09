@@ -1,5 +1,6 @@
 FROM scratch
 ENV authCode "1234"
+ENV PORT 80
 ADD main /
-EXPOSE 8080
+EXPOSE 80
 CMD ["/main"]
