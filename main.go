@@ -6,6 +6,7 @@ import (
 	"image"
 	"image/draw"
 	"image/jpeg"
+	"image/png"
 	"log"
 	"net/http"
 	"os"
@@ -32,13 +33,19 @@ func main() {
 		port = "8081"
 	}
 
-	router.Path("/api/namedgoldcard/").Queries("name", "{name}", "code", "{code}").HandlerFunc(NamedGoldCardHandler).Name("NamedGoldCardHandler")
+	router.Path("/api/namedgoldcard/").Queries("name", "{name}", "code", "{code}", "type", "{type}").HandlerFunc(NamedGoldCardHandler).Name("NamedGoldCardHandler")
+	router.Path("/api/namedgoldcard/").Queries("name", "{name}", "code", "{code}").HandlerFunc(NamedGoldCardHandler)
 	log.Fatal(http.ListenAndServe(":"+port, router))
 }
 
 // NamedGoldCardHandler handles the input request
 func NamedGoldCardHandler(w http.ResponseWriter, r *http.Request) {
-	imagen, err := genGoldCard(r.URL.Query().Get("name"))
+	//imagen, err := genGoldCard(r.URL.Query().Get("name")) // Original
+	nombre := r.FormValue("name")
+	//codigo := r.FormValue("code")
+	tipoImagen := r.FormValue("type")
+
+	imagen, err := genGoldCard(nombre, tipoImagen)
 
 	if err != nil {
 		fmt.Println(err)
@@ -49,7 +56,7 @@ func NamedGoldCardHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(imagen)
 }
 
-func genGoldCard(nombre string) (goldCard []byte, err error) {
+func genGoldCard(nombre string, tipo string) (goldCard []byte, err error) {
 
 	var fontSize float64 = 86
 	shortName := "Usuario Gold"
@@ -114,9 +121,21 @@ func genGoldCard(nombre string) (goldCard []byte, err error) {
 
 	//  si creas una imagen nueva en lugar de cargarla desde archivo como lo vamos hacer en un momento, codifica el buffer entoences con png.Encode()
 	//png.Encode(&buf, rgba)
-	var opt jpeg.Options
-	opt.Quality = 50
-	jpeg.Encode(buf, rgba, &opt)
+
+	switch tipo {
+	case "png":
+		// no se necesita comprimir por que la compresión es loseless en PNG
+		err := png.Encode(buf, rgba)
+		if err != nil {
+			log.Fatal(err)
+		}
+	default: // Encode to JPEG
+		var opt jpeg.Options
+		opt.Quality = 50
+		if err := jpeg.Encode(buf, rgba, &opt); err != nil {
+			log.Fatal(err)
+		}
+	}
 
 	//convierte el buffer de byes a base64 string - use buf.Bytes() para nueva imagen
 	//imgBase64Str := base64.StdEncoding.EncodeToString(buf)
@@ -135,23 +154,3 @@ func cleanName(nombre string) (name string) {
 	shortName := splitName[0] + " " + splitName[1]
 	return shortName
 }
-
-/*
-func NamedGoldCardHandler(w http.ResponseWriter, r *http.Request) {
-
-	authCode := os.Getenv("authCode")
-	//log.Println(authCode)
-	name := r.URL.Query().Get("name")
-	code := r.URL.Query().Get("code")
-
-	if code == authCode {
-		log.Println("name:", name)
-		log.Println("code:", code)
-		fmt.Fprintln(w, "Name:", name)
-		fmt.Fprintln(w, "Code:", code)
-	} else {
-		http.Error(w, "Unauthorized", 401)
-	}
-
-}
-*/
